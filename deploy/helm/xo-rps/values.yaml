@@ -1,0 +1,74 @@
+global:
+  imagePullPolicy: IfNotPresent
+
+web:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/adelhussein01/cloudproj/web
+    tag: "dev"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+api:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/adelhussein01/cloudproj/api
+    tag: "dev"
+  corsOrigin: "http://xo-rps.example.com"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: alb
+  host: xo-rps.example.com
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/group.name: xo-rps
+  tls: []
+
+autoscaling:
+  web:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  api:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 70
+
+externalSecrets:
+  enabled: false
+  secretStoreName: aws-secrets-manager
+  sessionSecretKey: xo-rps/prod/session
+
+serviceAccount:
+  api:
+    create: true
+    annotations: {}
+  web:
+    create: true
+    annotations: {}
+
+podAnnotations:
+  prometheus.io/scrape: "false"
+
+networkPolicy:
+  enabled: false

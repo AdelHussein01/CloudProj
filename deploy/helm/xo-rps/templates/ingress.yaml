@@ -1,0 +1,41 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "xo-rps.fullname" . }}
+  labels:
+    {{- include "xo-rps.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "xo-rps.apiName" . }}
+                port:
+                  name: http
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "xo-rps.apiName" . }}
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "xo-rps.webName" . }}
+                port:
+                  name: http
+{{- end }}

@@ -1,0 +1,145 @@
+name: Build Images and Promote with GitOps
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "deploy/helm/xo-rps/values.yaml"
+      - "docs/**"
+      - "infra/**"
+
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  release:
+    name: Build, scan, push, and update Helm values
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Normalize image repository
+        id: images
+        shell: bash
+        run: echo "repository=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/api:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/web:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/api:${{ env.IMAGE_TAG }}
+          format: sarif
+          output: trivy-api.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Scan web image
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/web:${{ env.IMAGE_TAG }}
+          format: sarif
+          output: trivy-web.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Upload API scan
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-api.sarif
+          category: trivy-api
+
+      - name: Upload web scan
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-web.sarif
+          category: trivy-web
+
+      - name: Promote image tags in GitOps values
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("deploy/helm/xo-rps/values.yaml")
+          text = path.read_text()
+          repo = "${{ steps.images.outputs.repository }}"
+          tag = "${{ env.IMAGE_TAG }}"
+          text = text.replace("ghcr.io/REPLACE_WITH_GITHUB_OWNER/REPLACE_WITH_REPO/web", f"ghcr.io/{repo}/web")
+          text = text.replace("ghcr.io/REPLACE_WITH_GITHUB_OWNER/REPLACE_WITH_REPO/api", f"ghcr.io/{repo}/api")
+          text = text.replace('tag: "dev"', f'tag: "{tag}"')
+          lines = text.splitlines()
+          in_web = False
+          in_api = False
+          for index, line in enumerate(lines):
+              stripped = line.strip()
+              if stripped == "web:":
+                  in_web = True
+                  in_api = False
+              elif stripped == "api:":
+                  in_web = False
+                  in_api = True
+              elif stripped and not line.startswith(" ") and stripped.endswith(":"):
+                  in_web = False
+                  in_api = False
+              if (in_web or in_api) and stripped.startswith("tag:"):
+                  lines[index] = f'    tag: "{tag}"'
+          path.write_text("\n".join(lines) + "\n")
+          PY
+
+      - name: Commit GitOps promotion
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/helm/xo-rps/values.yaml
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to promote."
+          else
+            git commit -m "chore(gitops): promote $IMAGE_TAG"
+            git push
+          fi

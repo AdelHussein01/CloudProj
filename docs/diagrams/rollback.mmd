@@ -1,0 +1,9 @@
+flowchart TD
+    Bad["Bad deployment detected"] --> Decide["Choose rollback method"]
+    Decide --> Revert["git revert promotion commit"]
+    Decide --> Workflow["Run rollback workflow with known-good tags"]
+    Revert --> Commit["Rollback commit in main"]
+    Workflow --> Commit
+    Commit --> Argo["ArgoCD detects desired-state change"]
+    Argo --> K8s["Kubernetes rolls back image tags"]
+    K8s --> Verify["Verify pods, app flow, and metrics"]

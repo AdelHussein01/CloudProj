@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Dev as Developer
+    participant Git as GitHub
+    participant CI as GitHub Actions
+    participant Registry as GHCR
+    participant Argo as ArgoCD
+    participant EKS as EKS
+
+    Dev->>Git: Merge PR to main
+    Git->>CI: Trigger CI and release workflow
+    CI->>CI: Type check, test, build
+    CI->>Registry: Push sha-tagged images
+    CI->>CI: Scan images
+    CI->>Git: Commit updated Helm image tags
+    Argo->>Git: Poll or receive webhook
+    Argo->>EKS: Sync desired state
+    EKS->>EKS: Rolling update with probes
+    Argo->>Git: Report synced and healthy

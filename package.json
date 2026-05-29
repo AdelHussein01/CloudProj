@@ -1,0 +1,19 @@
+{
+  "name": "xo-rps-gitops-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloud-native GitOps CI/CD demo using Next.js, NestJS, ArgoCD, GitHub Actions, and AWS EKS.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @xo-rps/api",
+    "dev:web": "npm run dev -w @xo-rps/web",
+    "build": "npm run build -w @xo-rps/api && npm run build -w @xo-rps/web",
+    "test": "npm run test -w @xo-rps/api && npm run test -w @xo-rps/web",
+    "lint": "npm run lint -w @xo-rps/api && npm run lint -w @xo-rps/web"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}

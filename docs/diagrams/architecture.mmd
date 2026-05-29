@@ -1,0 +1,22 @@
+flowchart LR
+    UserA["Host Browser"] --> Web["Next.js Web App"]
+    UserB["Invited Browser"] --> Web
+    Web <--> Api["NestJS Socket.IO API"]
+    Api --> Health["/health"]
+
+    subgraph EKS["AWS EKS Cluster"]
+        WebPod["Web Pods"]
+        ApiPod["API Pod"]
+        Ingress["AWS ALB Ingress"]
+        WebPod <--> ApiPod
+        Ingress --> WebPod
+        Ingress --> ApiPod
+    end
+
+    Git["GitHub Repository"] --> Actions["GitHub Actions"]
+    Actions --> GHCR["GHCR Images"]
+    Actions --> Values["Helm values.yaml"]
+    Values --> Argo["ArgoCD"]
+    Argo --> EKS
+    Secrets["AWS Secrets Manager"] --> ESO["External Secrets Operator"]
+    ESO --> ApiPod

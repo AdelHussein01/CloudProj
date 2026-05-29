@@ -1,0 +1,6 @@
+apiVersion: v2
+name: xo-rps
+description: Next.js and NestJS real-time game platform for GitOps CI/CD demonstrations.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

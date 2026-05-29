@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: xo-rps
+  namespace: argocd
+spec:
+  project: xo-rps
+  source:
+    repoURL: https://github.com/AdelHussein01/CloudProj.git
+    targetRevision: main
+    path: deploy/helm/xo-rps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: xo-rps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

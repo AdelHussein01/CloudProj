@@ -1,0 +1,57 @@
+name: Rollback GitOps Image Tags
+
+on:
+  workflow_dispatch:
+    inputs:
+      web_tag:
+        description: "Web image tag to deploy, for example sha-abc123..."
+        required: true
+      api_tag:
+        description: "API image tag to deploy, for example sha-abc123..."
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  rollback:
+    name: Commit rollback tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Helm values
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("deploy/helm/xo-rps/values.yaml")
+          lines = path.read_text().splitlines()
+          section = None
+          for index, line in enumerate(lines):
+              stripped = line.strip()
+              if stripped == "web:":
+                  section = "web"
+              elif stripped == "api:":
+                  section = "api"
+              elif stripped and not line.startswith(" ") and stripped.endswith(":"):
+                  section = None
+
+              if section == "web" and stripped.startswith("tag:"):
+                  lines[index] = '    tag: "${{ inputs.web_tag }}"'
+              if section == "api" and stripped.startswith("tag:"):
+                  lines[index] = '    tag: "${{ inputs.api_tag }}"'
+
+          path.write_text("\n".join(lines) + "\n")
+          PY
+
+      - name: Commit rollback
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/helm/xo-rps/values.yaml
+          git commit -m "rollback: deploy web=${{ inputs.web_tag }} api=${{ inputs.api_tag }}"
+          git push
