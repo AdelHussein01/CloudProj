@@ -68,7 +68,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan API image
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/api:${{ env.IMAGE_TAG }}
           format: sarif
@@ -77,7 +77,7 @@ jobs:
           exit-code: 1
 
       - name: Scan web image
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.images.outputs.repository }}/web:${{ env.IMAGE_TAG }}
           format: sarif
