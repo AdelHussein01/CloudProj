@@ -12,6 +12,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build -w @xo-rps/web
 
 FROM node:22-alpine AS runner
+RUN apk upgrade --no-cache
 ENV NODE_ENV=production
 ENV PORT=3000
 WORKDIR /repo

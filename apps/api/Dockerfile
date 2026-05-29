@@ -10,6 +10,7 @@ RUN npm run build -w @xo-rps/api
 RUN npm prune --omit=dev
 
 FROM node:22-alpine AS runner
+RUN apk upgrade --no-cache
 ENV NODE_ENV=production
 ENV PORT=3001
 WORKDIR /repo
