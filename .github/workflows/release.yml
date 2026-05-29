@@ -107,6 +107,16 @@ jobs:
           sarif_file: trivy-web.sarif
           category: trivy-web
 
+      - name: Archive Trivy SARIF
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-sarif-${{ github.sha }}
+          path: |
+            trivy-api.sarif
+            trivy-web.sarif
+          if-no-files-found: ignore
+
       - name: Fail on actionable Trivy findings
         if: steps.scan-api.outcome == 'failure' || steps.scan-web.outcome == 'failure'
         shell: bash
