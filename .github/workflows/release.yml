@@ -8,6 +8,8 @@ on:
       - "deploy/helm/xo-rps/values.yaml"
       - "docs/**"
       - "infra/**"
+      - "outputs/**"
+      - "scripts/**"
 
 permissions:
   contents: write
@@ -117,14 +119,37 @@ jobs:
             trivy-web.sarif
           if-no-files-found: ignore
 
-      - name: Fail on actionable Trivy findings
-        if: steps.scan-api.outcome == 'failure' || steps.scan-web.outcome == 'failure'
+      - name: Evaluate Trivy security gate
         shell: bash
         run: |
-          echo "API scan outcome: ${{ steps.scan-api.outcome }}"
-          echo "Web scan outcome: ${{ steps.scan-web.outcome }}"
-          echo "Trivy found fixed HIGH/CRITICAL vulnerabilities. Check Security and quality > Code scanning for details."
-          exit 1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          actionable = []
+          warning_count = 0
+          for sarif_path in [Path("trivy-api.sarif"), Path("trivy-web.sarif")]:
+              if not sarif_path.exists():
+                  continue
+              data = json.loads(sarif_path.read_text())
+              for run in data.get("runs", []):
+                  for result in run.get("results", []):
+                      message = result.get("message", {}).get("text", "")
+                      level = result.get("level", "")
+                      is_high_or_critical = "Severity: HIGH" in message or "Severity: CRITICAL" in message
+                      if level == "error" or is_high_or_critical:
+                          actionable.append((sarif_path.name, result.get("ruleId", "unknown"), message.splitlines()[0]))
+                      else:
+                          warning_count += 1
+
+          if actionable:
+              print("Trivy found HIGH/CRITICAL findings:")
+              for file_name, rule_id, summary in actionable:
+                  print(f"- {file_name}: {rule_id} {summary}")
+              raise SystemExit(1)
+
+          print(f"Trivy security gate passed. Non-blocking findings: {warning_count}")
+          PY
 
       - name: Promote image tags in GitOps values
         shell: bash
