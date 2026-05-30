@@ -16,6 +16,14 @@ OUT = ROOT / "outputs" / "final"
 ASSETS = ROOT / "outputs" / "report-assets"
 DOCX = OUT / "cloud-native-gitops-report.docx"
 
+TEAM_MEMBERS = [
+    ("Ammar Darwish", "73226"),
+    ("Djonacy Sigawuke Jr", "74294"),
+    ("Adel Hussein", "73405"),
+    ("Daniel Kandemiri", "73506"),
+    ("Assil Sediri", "73476"),
+]
+
 
 def ensure_dirs() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
@@ -159,6 +167,15 @@ def add_table(doc: Document, headers: list[str], rows: list[list[str]]) -> None:
     doc.add_paragraph()
 
 
+def add_team_table(doc: Document) -> None:
+    doc.add_paragraph("Team Members").runs[0].bold = True
+    add_table(
+        doc,
+        ["Student Name", "Student ID"],
+        [[name, student_id] for name, student_id in TEAM_MEMBERS],
+    )
+
+
 def add_bullets(doc: Document, items: list[str]) -> None:
     for item in items:
         doc.add_paragraph(item, style="List Bullet")
@@ -221,6 +238,7 @@ def build_docx() -> Path:
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
     meta.add_run("Repository: ").bold = True
     meta.add_run("https://github.com/AdelHussein01/CloudProj")
+    add_team_table(doc)
 
     add_heading(doc, "Executive Summary")
     doc.add_paragraph(

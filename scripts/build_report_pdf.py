@@ -27,6 +27,14 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "outputs" / "final"
 PDF = OUT / "cloud-native-gitops-report.pdf"
 
+TEAM_MEMBERS = [
+    ("Ammar Darwish", "73226"),
+    ("Djonacy Sigawuke Jr", "74294"),
+    ("Adel Hussein", "73405"),
+    ("Daniel Kandemiri", "73506"),
+    ("Assil Sediri", "73476"),
+]
+
 
 def styles():
     base = getSampleStyleSheet()
@@ -112,6 +120,27 @@ def table(headers: list[str], rows: list[list[str]], style) -> Table:
     return tbl
 
 
+def team_table(style) -> Table:
+    data = [[Paragraph("<b>Student Name</b>", style), Paragraph("<b>Student ID</b>", style)]]
+    data.extend([[Paragraph(name, style), Paragraph(student_id, style)] for name, student_id in TEAM_MEMBERS])
+    tbl = Table(data, colWidths=[4.8 * inch, 1.7 * inch], repeatRows=1)
+    tbl.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8EEF5")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0B2545")),
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#CBD5E1")),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    return tbl
+
+
 def footer(canvas, doc):
     canvas.saveState()
     canvas.setFont("Helvetica", 8)
@@ -136,6 +165,9 @@ def build_pdf() -> Path:
         )
     )
     story.append(Paragraph("<b>Repository:</b> https://github.com/AdelHussein01/CloudProj", st["BodyText"]))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("<b>Team Members</b>", st["BodyText"]))
+    story.append(team_table(st["BodyText"]))
     story.append(Spacer(1, 12))
 
     sections = [
