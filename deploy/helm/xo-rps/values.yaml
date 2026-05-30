@@ -5,7 +5,7 @@ web:
   replicaCount: 2
   image:
     repository: ghcr.io/adelhussein01/cloudproj/web
-    tag: "dev"
+    tag: "sha-bbb561887e7d9ec70818c135ab1ae43d923cd968"
   resources:
     requests:
       cpu: 100m
@@ -18,7 +18,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/adelhussein01/cloudproj/api
-    tag: "dev"
+    tag: "sha-bbb561887e7d9ec70818c135ab1ae43d923cd968"
   corsOrigin: "http://xo-rps.example.com"
   resources:
     requests:
