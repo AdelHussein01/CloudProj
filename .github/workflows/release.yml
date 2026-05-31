@@ -21,8 +21,41 @@ env:
   IMAGE_TAG: sha-${{ github.sha }}
 
 jobs:
+  ui-background-policy:
+    name: UI background policy
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.ui-background.outputs.decision }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Check UI background policy
+        id: ui-background
+        run: node scripts/check-ui-background-policy.mjs
+
+  approve-yellow-background:
+    name: Await admin approval for yellow UI background
+    needs: ui-background-policy
+    if: needs.ui-background-policy.outputs.decision == 'yellow'
+    runs-on: ubuntu-latest
+    environment:
+      name: ui-yellow-approval
+    steps:
+      - name: Approved yellow UI background
+        run: echo "Admin approval received for yellow UI background."
+
   release:
     name: Build, scan, push, and update Helm values
+    needs:
+      - ui-background-policy
+      - approve-yellow-background
+    if: always() && needs.ui-background-policy.result == 'success' && (needs.ui-background-policy.outputs.decision != 'yellow' || needs.approve-yellow-background.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

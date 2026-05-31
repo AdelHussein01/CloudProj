@@ -17,6 +17,8 @@ jobs:
   verify:
     name: Lint, test, and build
     runs-on: ubuntu-latest
+    outputs:
+      ui_background_decision: ${{ steps.ui-background.outputs.decision }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,5 +37,20 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Check UI background policy
+        id: ui-background
+        run: node scripts/check-ui-background-policy.mjs
+
       - name: Build
         run: npm run build
+
+  approve-yellow-background:
+    name: Await admin approval for yellow UI background
+    needs: verify
+    if: needs.verify.outputs.ui_background_decision == 'yellow'
+    runs-on: ubuntu-latest
+    environment:
+      name: ui-yellow-approval
+    steps:
+      - name: Approved yellow UI background
+        run: echo "Admin approval received for yellow UI background."
