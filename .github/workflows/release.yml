@@ -39,23 +39,23 @@ jobs:
         id: ui-background
         run: node scripts/check-ui-background-policy.mjs
 
-  approve-yellow-background:
-    name: Await admin approval for yellow UI background
+  approve-ui-background:
+    name: Await admin approval for UI background
     needs: ui-background-policy
-    if: needs.ui-background-policy.outputs.decision == 'yellow'
+    if: needs.ui-background-policy.outputs.decision == 'approval_required'
     runs-on: ubuntu-latest
     environment:
-      name: ui-yellow-approval
+      name: ui-background-approval
     steps:
-      - name: Approved yellow UI background
-        run: echo "Admin approval received for yellow UI background."
+      - name: Approved UI background
+        run: echo "Admin approval received for UI background."
 
   release:
     name: Build, scan, push, and update Helm values
     needs:
       - ui-background-policy
-      - approve-yellow-background
-    if: always() && needs.ui-background-policy.result == 'success' && (needs.ui-background-policy.outputs.decision != 'yellow' || needs.approve-yellow-background.result == 'success')
+      - approve-ui-background
+    if: always() && needs.ui-background-policy.result == 'success' && (needs.ui-background-policy.outputs.decision != 'approval_required' || needs.approve-ui-background.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

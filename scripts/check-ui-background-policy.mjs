@@ -64,8 +64,7 @@ function rgbFromDirectColor(value) {
   const named = {
     red: [255, 0, 0],
     green: [0, 128, 0],
-    lime: [0, 255, 0],
-    yellow: [255, 255, 0]
+    lime: [0, 255, 0]
   };
 
   if (named[normalized]) {
@@ -96,9 +95,6 @@ function familyFromRgb(rgb) {
   if (green >= 120 && green > red * 1.15 && green > blue * 1.15) {
     return "green";
   }
-  if (red >= 180 && green >= 150 && blue <= 120) {
-    return "yellow";
-  }
   return "neutral";
 }
 
@@ -109,7 +105,6 @@ function classifyBackground(value, variables) {
     const variableName = variableMatch[1].toLowerCase();
     if (variableName.includes("red")) return "red";
     if (variableName.includes("green")) return "green";
-    if (variableName.includes("yellow")) return "yellow";
   }
 
   const resolved = resolveVariables(value, variables)
@@ -127,7 +122,8 @@ function classifyBackground(value, variables) {
 const variables = parseRootVariables(css);
 const declarations = bodyBackgroundDeclarations(css);
 const background = declarations.at(-1) ?? "";
-const decision = classifyBackground(background, variables);
+const colorFamily = classifyBackground(background, variables);
+const decision = colorFamily === "red" || colorFamily === "green" ? colorFamily : "approval_required";
 
 writeOutput("decision", decision);
 writeOutput("background", background.replace(/\r?\n/g, " "));
@@ -137,10 +133,8 @@ if (decision === "red") {
   process.exit(1);
 }
 
-if (decision === "yellow") {
-  console.log(`UI background policy detected yellow (${background}); admin approval is required.`);
-} else if (decision === "green") {
+if (decision === "green") {
   console.log(`UI background policy accepted green (${background}).`);
 } else {
-  console.log(`UI background policy found no red/yellow/green body background override (${background || "none"}).`);
+  console.log(`UI background policy requires admin approval for this background (${background || "none"}).`);
 }
