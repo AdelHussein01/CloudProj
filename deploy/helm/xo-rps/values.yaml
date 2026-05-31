@@ -19,7 +19,7 @@ api:
   image:
     repository: ghcr.io/adelhussein01/cloudproj/api
     tag: "sha-ba4346555f3c33a1be3943b1354fc7b185ada0b8"
-  corsOrigin: "http://xo-rps.example.com"
+  corsOrigin: ""
   resources:
     requests:
       cpu: 100m
@@ -34,7 +34,7 @@ service:
 ingress:
   enabled: true
   className: alb
-  host: xo-rps.example.com
+  host: ""
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip

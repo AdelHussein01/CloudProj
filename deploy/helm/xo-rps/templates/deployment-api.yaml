@@ -30,8 +30,10 @@ spec:
           env:
             - name: PORT
               value: "3001"
+            {{- if .Values.api.corsOrigin }}
             - name: CORS_ORIGIN
               value: {{ .Values.api.corsOrigin | quote }}
+            {{- end }}
           {{- if .Values.externalSecrets.enabled }}
           envFrom:
             - secretRef:
